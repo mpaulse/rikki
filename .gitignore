@@ -1,0 +1,7 @@
+.gradle
+.idea
+.openjfx
+.Rikki
+build
+src/generated
+src/main/resources/LICENSE*.txt
