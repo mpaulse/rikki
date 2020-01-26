@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Marlon Paulse
+ * Copyright (c) 2020 Marlon Paulse
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +24,8 @@ package com.mpaulse.rikki
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.mpaulse.mobitra.DEFAULT_MIN_WINDOW_HEIGHT
-import com.mpaulse.mobitra.DEFAULT_MIN_WINDOW_WIDTH
+import com.mpaulse.rikki.DEFAULT_MIN_WINDOW_HEIGHT
+import com.mpaulse.rikki.DEFAULT_MIN_WINDOW_WIDTH
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
