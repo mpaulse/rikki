@@ -1,6 +1,8 @@
 Rikki
 ======================================================
 
+[![Build Status](https://dev.azure.com/mpaulse/rikki/_apis/build/status/mpaulse.rikki?branchName=master)](https://dev.azure.com/mpaulse/rikki/_build/latest?definitionId=1&branchName=master)
+
 Rikki is a Japanese-to-English dictionary application for Windows that allows
 you to lookup Japanese words and kanji by hovering your mouse over any Japanese
 text. It works similar to the popular Rikaichan/Rikaikun/Rikaichamp browser
