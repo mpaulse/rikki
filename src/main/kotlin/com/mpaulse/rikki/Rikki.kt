@@ -26,11 +26,28 @@ import javafx.application.Platform
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
+import javafx.geometry.Insets
 import javafx.scene.Scene
+import javafx.scene.control.Label
 import javafx.scene.image.Image
+import javafx.scene.layout.Background
+import javafx.scene.layout.BackgroundFill
+import javafx.scene.layout.Border
+import javafx.scene.layout.BorderStroke
+import javafx.scene.layout.BorderStrokeStyle
+import javafx.scene.layout.BorderWidths
+import javafx.scene.layout.CornerRadii
+import javafx.scene.paint.Paint
+import javafx.stage.Popup
 import javafx.stage.Stage
+import javafx.stage.StageStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.jnativehook.GlobalScreen
+import org.jnativehook.mouse.NativeMouseEvent
+import org.jnativehook.mouse.NativeMouseMotionListener
 import org.slf4j.LoggerFactory
 import java.awt.SystemTray
 import java.awt.Toolkit
@@ -66,15 +83,52 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
     private lateinit var mainWindow: Stage
     private var sysTrayIcon: TrayIcon? = null
 
+
     override fun start(stage: Stage) {
         Thread.setDefaultUncaughtExceptionHandler { _, e ->
             logger.error("Application error", e)
         }
 
-        createMainWindow(stage)
-        createSystemTrayIcon()
-        initControls()
-        startMainWindow()
+        val popupLabel = Label("Rikki")
+        popupLabel.background = Background(BackgroundFill(Paint.valueOf("white"), CornerRadii(5.0), Insets(0.0)))
+        popupLabel.border = Border(BorderStroke(Paint.valueOf("blue"), BorderStrokeStyle.SOLID, CornerRadii(5.0), BorderWidths(2.0)))
+
+        val popup = Popup()
+        popup.content += popupLabel
+
+        stage.initStyle(StageStyle.UTILITY)
+        stage.width = 0.0
+        stage.height = 0.0
+        stage.opacity = 0.0
+        stage.show()
+
+
+        GlobalScreen.registerNativeHook()
+        GlobalScreen.setEventDispatcher(UIEventExecutorService())
+        GlobalScreen.addNativeMouseMotionListener(object: NativeMouseMotionListener {
+            override fun nativeMouseDragged(event: NativeMouseEvent) {
+            }
+
+            override fun nativeMouseMoved(event: NativeMouseEvent) {
+                popupLabel.text = event.paramString()
+                popup.x = event.x.toDouble()
+                popup.y = event.y.toDouble()
+                popup.show(stage)
+                println(event.paramString())
+            }
+        })
+
+        launch {
+            println("Exiting in 10s")
+            delay(10000)
+            println("Exiting")
+            Platform.exit()
+        }
+
+        //createMainWindow(stage)
+        //createSystemTrayIcon()
+        //initControls()
+        //startMainWindow()
     }
 
     fun <T> loadFXMLPane(pane: String, controller: Any): T {
@@ -159,9 +213,10 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
     }
 
     override fun stop() {
-        appData.windowPosition = mainWindow.x to mainWindow.y
-        appData.windowSize = mainWindow.width to mainWindow.height
-        appData.save()
+        //appData.windowPosition = mainWindow.x to mainWindow.y
+        //appData.windowSize = mainWindow.width to mainWindow.height
+        //appData.save()
+        GlobalScreen.unregisterNativeHook()
     }
 
     private fun createMainWindow(stage: Stage) {

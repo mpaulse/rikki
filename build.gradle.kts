@@ -26,7 +26,7 @@ import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-version = "0.1"
+version = "0.1-snapshot"
 
 plugins {
     id("org.jetbrains.kotlin.jvm") version "1.3.61"
@@ -45,7 +45,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.3.3")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.10.1")
     implementation("ch.qos.logback:logback-classic:1.2.3")
+    implementation("org.slf4j:jul-to-slf4j:1.7.30")
     implementation("net.java.dev.jna:jna-platform:5.5.0")
+    implementation("com.1stleg:jnativehook:2.1.0")
     implementation(fileTree("lib") { include("*.jar") })
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
