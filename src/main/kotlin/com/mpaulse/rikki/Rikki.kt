@@ -119,17 +119,7 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
             }
         })
 
-        launch {
-            println("Exiting in 10s")
-            delay(10000)
-            println("Exiting")
-            Platform.exit()
-        }
-
-        //createMainWindow(stage)
-        //createSystemTrayIcon()
-        //initControls()
-        //startMainWindow()
+        createSystemTrayIcon()
     }
 
     fun <T> loadFXMLPane(pane: String, controller: Any): T {
@@ -141,14 +131,6 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
         }
         loader.location = controller.javaClass.getResource("/fxml/$pane.fxml")
         return loader.load<T>()
-    }
-
-    private fun startMainWindow() {
-    }
-
-    private fun showMainWindow() {
-        mainWindow.show()
-        mainWindow.toFront()
     }
 
     private fun verifyAutoStartConfig() {
@@ -220,31 +202,10 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
         GlobalScreen.unregisterNativeHook()
     }
 
-    private fun createMainWindow(stage: Stage) {
-        mainWindow = stage
-        mainWindow.scene = Scene(loadFXMLPane("MainWindow", this))
-        mainWindow.scene.stylesheets.add("style.css")
-        mainWindow.minWidth = DEFAULT_MIN_WINDOW_WIDTH
-        mainWindow.width = if (appData.windowSize.first >= mainWindow.minWidth) appData.windowSize.first else mainWindow.minWidth
-        mainWindow.minHeight = DEFAULT_MIN_WINDOW_HEIGHT
-        mainWindow.height = if (appData.windowSize.second >= mainWindow.minHeight) appData.windowSize.second else mainWindow.minHeight
-        mainWindow.icons.add(Image(APP_ICON))
-
-        val pos = appData.windowPosition
-        if (pos != null) {
-            mainWindow.x = pos.first
-            mainWindow.y = pos.second
-        } else {
-            mainWindow.centerOnScreen()
-            appData.windowPosition = mainWindow.x to mainWindow.y
-        }
-
-        mainWindow.title = APP_NAME
-    }
-
     private fun createSystemTrayIcon() {
         if (!SystemTray.isSupported()) {
-            return
+            logger.error("System tray not supported on this platform. Exiting.")
+            Platform.exit()
         }
 
         val sysTray = SystemTray.getSystemTray()
@@ -270,14 +231,9 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
         })
         sysTrayMenu.invoker = sysTrayMenuInvoker
 
-        val openMenuItem = JMenuItem("Open $APP_NAME")
-        openMenuItem.font = AWTFont.decode(null).deriveFont(AWTFont.BOLD)
-        setupTrayMenuItemMouseListener(openMenuItem)
-        openMenuItem.addActionListener(::onOpenMainWindowFromSystemTray)
-
-        val settingsMenuItem = JMenuItem("Settings")
-        setupTrayMenuItemMouseListener(settingsMenuItem)
-        settingsMenuItem.addActionListener(::onSettingsFromSystemTray)
+        //val settingsMenuItem = JMenuItem("Settings")
+        //setupTrayMenuItemMouseListener(settingsMenuItem)
+        //settingsMenuItem.addActionListener(::onSettingsFromSystemTray)
 
         val exitMenuItem = JMenuItem("Exit")
         setupTrayMenuItemMouseListener(exitMenuItem)
@@ -286,12 +242,11 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
             onExit()
         }
 
-        sysTrayMenu.add(openMenuItem)
-        sysTrayMenu.add(settingsMenuItem)
+        //sysTrayMenu.add(settingsMenuItem)
         sysTrayMenu.addSeparator()
         sysTrayMenu.add(exitMenuItem)
 
-        sysTrayIcon?.addActionListener(::onOpenMainWindowFromSystemTray)
+        //sysTrayIcon?.addActionListener(::onOpenMainWindowFromSystemTray)
         sysTrayIcon?.addMouseListener(object: MouseAdapter() {
             override fun mouseReleased(event: AWTMouseEvent) {
                 if (event.isPopupTrigger) {
@@ -312,53 +267,6 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
             menuItem.removeMouseListener(listener)
             menuItem.addMouseListener(LeftClickOnlyMouseListenerDelegate(listener))
         }
-    }
-
-    private fun initControls() {
-    }
-
-    @FXML
-    fun onHideMainWindow(event: ActionEvent) {
-        mainWindow.hide()
-        event.consume()
-    }
-
-    private fun onOpenMainWindowFromSystemTray(event: AWTActionEvent) {
-        Platform.runLater {
-            showMainWindow()
-        }
-    }
-
-    private fun onSettingsFromSystemTray(event: AWTActionEvent) {
-        onOpenMainWindowFromSystemTray(event)
-        onSettings()
-    }
-
-    @FXML
-    fun onSettings(event: ActionEvent? = null) {
-        if (event != null) {
-            //showSecondaryScreen(settingsScreen)
-            event.consume()
-        } else {
-            Platform.runLater {
-                //showSecondaryScreen(settingsScreen)
-            }
-        }
-    }
-
-    fun onExitSettings() {
-        appData.save()
-        if (appData.autoStart) {
-            enableAutoStart()
-        } else {
-            disableAutoStart()
-        }
-    }
-
-    @FXML
-    fun onAbout(event: ActionEvent) {
-        //showSecondaryScreen(aboutScreen)
-        event.consume()
     }
 
     @FXML
