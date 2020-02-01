@@ -20,23 +20,19 @@ package com.mpaulse.rikki
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.mpaulse.rikki.DEFAULT_MIN_WINDOW_HEIGHT
-import com.mpaulse.rikki.DEFAULT_MIN_WINDOW_WIDTH
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 
-class ApplicationData(
+class Settings(
     appHomePath: Path
 ) {
 
-    private val dataFilePath = appHomePath.resolve("application.dat")
+    private val dataFilePath = appHomePath.resolve("settings.cfg")
     private val jsonHandler = jacksonObjectMapper()
-    private val logger = LoggerFactory.getLogger(ApplicationData::class.java)
+    private val logger = LoggerFactory.getLogger(Settings::class.java)
 
-    var windowSize = DEFAULT_MIN_WINDOW_WIDTH to DEFAULT_MIN_WINDOW_HEIGHT
-    var windowPosition: Pair<Double, Double>? = null
-    var autoStart = true
+    var autoStart = false
 
     init {
         if (Files.exists(dataFilePath)) {
@@ -45,21 +41,9 @@ class ApplicationData(
                     dataFilePath.toFile(),
                     object : TypeReference<MutableMap<String, Any>>() {})
 
-                val windowWidth = data["windowWidth"] as? Double
-                val windowHeight = data["windowHeight"] as? Double
-                if (windowWidth != null && windowHeight != null) {
-                    windowSize = windowWidth to windowHeight
-                }
-
-                val windowPosX = data["windowPosX"] as? Double
-                val windowPosY = data["windowPosY"] as? Double
-                if (windowPosX != null && windowPosY != null) {
-                    windowPosition = windowPosX to windowPosY
-                }
-
-                autoStart = data["autoStart"] as? Boolean ?: true
+                autoStart = data["autoStart"] as? Boolean ?: false
             } catch (e: Throwable) {
-                logger.error("Error loading application data", e)
+                logger.error("Error loading application settings", e)
             }
         }
     }
@@ -67,14 +51,10 @@ class ApplicationData(
     fun save() {
         try {
             val data = mapOf(
-                "windowWidth" to windowSize.first,
-                "windowHeight" to windowSize.second,
-                "windowPosX" to windowPosition?.first,
-                "windowPosY" to windowPosition?.second,
                 "autoStart" to autoStart)
             Files.writeString(dataFilePath, jsonHandler.writeValueAsString(data))
         } catch (e: Throwable) {
-            logger.error("Error saving application data", e)
+            logger.error("Error saving application settings", e)
         }
     }
 

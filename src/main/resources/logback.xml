@@ -51,5 +51,5 @@
         <appender-ref ref="file" />
         <appender-ref ref="stderr" />
     </root>
-    <logger name="org.jnativehook" level="WARN"/>
+    <logger name="org.jnativehook" level="OFF"/>
 </configuration>

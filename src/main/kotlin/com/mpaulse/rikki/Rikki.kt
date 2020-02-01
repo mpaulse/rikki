@@ -28,9 +28,7 @@ import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
 import javafx.geometry.Insets
-import javafx.scene.Scene
 import javafx.scene.control.Label
-import javafx.scene.image.Image
 import javafx.scene.layout.Background
 import javafx.scene.layout.BackgroundFill
 import javafx.scene.layout.Border
@@ -39,16 +37,17 @@ import javafx.scene.layout.BorderStrokeStyle
 import javafx.scene.layout.BorderWidths
 import javafx.scene.layout.CornerRadii
 import javafx.scene.paint.Paint
+import javafx.scene.robot.Robot
 import javafx.stage.Popup
 import javafx.stage.Stage
 import javafx.stage.StageStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.jnativehook.GlobalScreen
+import org.jnativehook.keyboard.NativeKeyAdapter
+import org.jnativehook.keyboard.NativeKeyEvent
 import org.jnativehook.mouse.NativeMouseEvent
-import org.jnativehook.mouse.NativeMouseMotionListener
+import org.jnativehook.mouse.NativeMouseInputAdapter
 import org.slf4j.LoggerFactory
 import java.awt.SystemTray
 import java.awt.Toolkit
@@ -63,63 +62,55 @@ import javax.swing.JDialog
 import javax.swing.JMenuItem
 import javax.swing.JPopupMenu
 import javax.swing.UIManager
-import java.awt.Font as AWTFont
 import java.awt.Image as AWTImage
-import java.awt.event.ActionEvent as AWTActionEvent
 import java.awt.event.MouseEvent as AWTMouseEvent
 
 private const val HIDE_IN_BACKGROUND_PARAMETER = "-b"
 private const val RUN_AT_WIN_LOGIN_REGISTRY_KEY = "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
 
-const val DEFAULT_MIN_WINDOW_WIDTH = 900.0
-const val DEFAULT_MIN_WINDOW_HEIGHT = 600.0
-
 val devModeEnabled = System.getProperty("dev")?.toBoolean() ?: false
 
 class RikkiApplication: Application(), CoroutineScope by MainScope() {
 
-    val appData = ApplicationData(APP_HOME_PATH)
+    private val settings = Settings(APP_HOME_PATH)
     private val logger = LoggerFactory.getLogger(RikkiApplication::class.java)
 
-    private lateinit var mainWindow: Stage
+    private lateinit var stage: Stage
     private var sysTrayIcon: TrayIcon? = null
-
+    private val popup = Popup()
+    private val robot = Robot()
+    private var lookupActivated = false
 
     override fun start(stage: Stage) {
         Thread.setDefaultUncaughtExceptionHandler { _, e ->
             logger.error("Application error", e)
         }
 
+        verifyAutoStartConfig()
+        initStage(stage)
+        createMouseAndKeyListeners()
+        createSystemTrayIcon()
+    }
+
+    override fun stop() {
+        settings.save()
+        GlobalScreen.unregisterNativeHook()
+    }
+
+    private fun initStage(stage: Stage) {
         val popupLabel = Label("Rikki")
         popupLabel.background = Background(BackgroundFill(Paint.valueOf("white"), CornerRadii(5.0), Insets(0.0)))
         popupLabel.border = Border(BorderStroke(Paint.valueOf("blue"), BorderStrokeStyle.SOLID, CornerRadii(5.0), BorderWidths(2.0)))
-
-        val popup = Popup()
         popup.content += popupLabel
+        popup.x = robot.mouseX
+        popup.y = robot.mouseY
 
+        this.stage = stage
         stage.initStyle(StageStyle.UTILITY)
         stage.width = 0.0
         stage.height = 0.0
         stage.opacity = 0.0
         stage.show()
-
-
-        GlobalScreen.registerNativeHook()
-        GlobalScreen.setEventDispatcher(UIEventExecutorService())
-        GlobalScreen.addNativeMouseMotionListener(object: NativeMouseMotionListener {
-            override fun nativeMouseDragged(event: NativeMouseEvent) {
-            }
-
-            override fun nativeMouseMoved(event: NativeMouseEvent) {
-                popupLabel.text = event.paramString()
-                popup.x = event.x.toDouble()
-                popup.y = event.y.toDouble()
-                popup.show(stage)
-                println(event.paramString())
-            }
-        })
-
-        createSystemTrayIcon()
     }
 
     fun <T> loadFXMLPane(pane: String, controller: Any): T {
@@ -134,7 +125,7 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
     }
 
     private fun verifyAutoStartConfig() {
-        if (appData.autoStart) {
+        if (settings.autoStart) {
             val launcherPath = getLauncherPath()?.toString()
             val expectedRegistryConfig = "$launcherPath $HIDE_IN_BACKGROUND_PARAMETER"
 
@@ -195,11 +186,22 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
         }
     }
 
-    override fun stop() {
-        //appData.windowPosition = mainWindow.x to mainWindow.y
-        //appData.windowSize = mainWindow.width to mainWindow.height
-        //appData.save()
-        GlobalScreen.unregisterNativeHook()
+    private fun createMouseAndKeyListeners() {
+        GlobalScreen.registerNativeHook()
+        GlobalScreen.setEventDispatcher(UIEventExecutorService())
+        GlobalScreen.addNativeMouseMotionListener(object: NativeMouseInputAdapter() {
+            override fun nativeMouseMoved(event: NativeMouseEvent) {
+                onMouseMoved(event)
+            }
+        })
+        GlobalScreen.addNativeKeyListener(object: NativeKeyAdapter() {
+            override fun nativeKeyPressed(event: NativeKeyEvent) {
+                onKeyEvent(event)
+            }
+            override fun nativeKeyReleased(event: NativeKeyEvent) {
+                onKeyEvent(event)
+            }
+        })
     }
 
     private fun createSystemTrayIcon() {
@@ -266,6 +268,22 @@ class RikkiApplication: Application(), CoroutineScope by MainScope() {
             val listener = menuItem.mouseListeners.first()
             menuItem.removeMouseListener(listener)
             menuItem.addMouseListener(LeftClickOnlyMouseListenerDelegate(listener))
+        }
+    }
+
+    private fun onMouseMoved(event: NativeMouseEvent) {
+        popup.x = event.x.toDouble()
+        popup.y = event.y.toDouble()
+    }
+
+    private fun onKeyEvent(event: NativeKeyEvent) {
+        lookupActivated =
+            (event.modifiers and NativeKeyEvent.CTRL_MASK != 0)
+            && (event.modifiers and NativeKeyEvent.ALT_MASK != 0)
+        if (!popup.isShowing && lookupActivated) {
+            popup.show(stage)
+        } else if (popup.isShowing && !lookupActivated) {
+            popup.hide()
         }
     }
 
